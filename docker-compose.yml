@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.16
+    container_name: milvus-etcd
+    environment:
+      - ALLOW_NONE_AUTHENTICATION=yes
+      - ETCD_AUTO_COMPACTION_MODE=revision
+      - ETCD_AUTO_COMPACTION_RETENTION=1000
+    volumes:
+      - ./volumes/etcd:/etcd
+    command: etcd --advertise-client-urls http://127.0.0.1:2379 --listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
+
+  minio:
+    image: minio/minio:RELEASE.2024-05-10T01-41-38Z
+    container_name: milvus-minio
+    environment:
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+    command: minio server /data --console-address ":9001"
+    volumes:
+      - ./volumes/minio:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  milvus:
+    image: milvusdb/milvus:v2.6.5
+    container_name: milvus-standalone
+    command: ["milvus", "run", "standalone"]
+    environment:
+      - ETCD_ENDPOINTS=etcd:2379
+      - MINIO_ADDRESS=minio:9000
+    volumes:
+      - ./volumes/milvus:/var/lib/milvus
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    depends_on:
+      etcd:
+        condition: service_started
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  attu:
+    image: zilliz/attu:v2.6.5             # 对应 Milvus 2.6.x 的 Attu 版本
+    container_name: milvus-attu
+    environment:
+      - MILVUS_URL=milvus:19530
+    ports:
+      - "3000:3000"
+    depends_on:
+      milvus:
+        condition: service_healthy
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama-service
+    volumes:
+      - ./volumes/ollama:/root/.ollama
+    ports:
+      - "11434:11434"
+    environment:
+      - OLLAMA_MAX_LOADED_MODELS=2    # 同时保持两个模型在内存
+      - OLLAMA_KEEP_ALIVE=30m         # 模型加载后保持 30 分钟不卸载
+
+  app:
+    build: .
+    container_name: pdf-agent-service
+    environment:
+      - MILVUS_HOST=milvus
+      - MILVUS_PORT=19530
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - EMBEDDING_MODEL=bge-m3
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - PYTHONPATH=/app
+      - EASYOCR_MODULE_PATH=/app/volumes/easyocr_models
+      - LLM_MODEL=qwen2:7b
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src:/app/src
+      - ./data:/app/data
+      - ./volumes/easyocr_models:/app/volumes/easyocr_models

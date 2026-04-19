@@ -1,0 +1,17 @@
+fastapi
+uvicorn[standard]
+python-multipart
+langchain>=0.2.0
+langchain-core>=0.2.0
+langchain-community>=0.2.0
+langchain-text-splitters>=0.2.0
+langchain-milvus>=0.1.9
+langchain-ollama
+pdf2image
+pillow
+pymupdf
+easyocr
+pymilvus>=2.5.0,<2.7.0
+numpy<2.0
+opencv-python-headless
+jieba

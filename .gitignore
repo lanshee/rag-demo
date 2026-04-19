@@ -1,0 +1,42 @@
+# --- Python 相关 ---
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv
+env/
+venv/
+ENV/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# --- 项目特定数据 ---
+# 忽略 PDF 源文件及数据目录（建议在生产中挂载外部卷）
+data/*.pdf
+# 保留的示例文件
+!data/document.pdf
+
+# OCR 缓存目录
+data/.ocr_cache/
+
+# --- Docker & 数据库持久化 ---
+# 忽略 docker-compose 挂载的本地数据卷
+volumes/
+!volumes/.gitkeep
+
+# 忽略容器日志
+*.log
+docker-compose.override.yml
+
+# --- 机器学习 & 模型 ---
+# 忽略 EasyOCR 自动下载的模型文件
+volumes/easyocr_models/
+# 忽略 Ollama 下载的模型
+volumes/ollama/
+
+# --- 编辑器 & 系统 ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
