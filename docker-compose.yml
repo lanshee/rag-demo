@@ -62,16 +62,16 @@ services:
       milvus:
         condition: service_healthy
 
-  ollama:
-    image: ollama/ollama:latest
-    container_name: ollama-service
-    volumes:
-      - ./volumes/ollama:/root/.ollama
-    ports:
-      - "11434:11434"
-    environment:
-      - OLLAMA_MAX_LOADED_MODELS=2    # 同时保持两个模型在内存
-      - OLLAMA_KEEP_ALIVE=30m         # 模型加载后保持 30 分钟不卸载
+#  ollama:
+#    image: ollama/ollama:latest
+#    container_name: ollama-service
+#    volumes:
+#      - ./volumes/ollama:/root/.ollama
+#    ports:
+#      - "11434:11434"
+#    environment:
+#      - OLLAMA_MAX_LOADED_MODELS=2    # 同时保持两个模型在内存
+#      - OLLAMA_KEEP_ALIVE=30m         # 模型加载后保持 30 分钟不卸载
 
   app:
     build: .
@@ -81,13 +81,13 @@ services:
       - MILVUS_PORT=19530
       - OLLAMA_BASE_URL=http://ollama:11434
       - EMBEDDING_MODEL=bge-m3
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - QWEN_API_KEY=${QWEN_API_KEY}
       - PYTHONPATH=/app
       - EASYOCR_MODULE_PATH=/app/volumes/easyocr_models
       - LLM_MODEL=qwen2:7b
     ports:
       - "8000:8000"
     volumes:
-      - ./src:/app/src
-      - ./data:/app/data
-      - ./volumes/easyocr_models:/app/volumes/easyocr_models
+      - .:/app
+    env_file:
+      - .env
